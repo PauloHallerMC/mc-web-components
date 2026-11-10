@@ -20,9 +20,9 @@ se publica aquí una versión nueva, con su etiqueta `vX.Y.Z`.
 Siempre con la versión en la dirección, para que los navegadores no usen una copia vieja:
 
 ```
-https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.0/rov-descent/mc-rov-descent.js
-https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.0/rov-descent/patagonia-mk2.glb
-https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.0/rov-descent/fondo-oceano.webp
+https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.1/rov-descent/mc-rov-descent.js
+https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.1/rov-descent/patagonia-mk2.glb
+https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.1/rov-descent/fondo-oceano.webp
 ```
 
 ## Derechos
