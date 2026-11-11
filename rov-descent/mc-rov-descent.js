@@ -4034,8 +4034,9 @@ h1 {
 .btn:focus-visible { outline: 2px solid var(--mc-acento); outline-offset: 3px; }
 /* \xCDcono de arrastre (mouse con flechas): el mouse se desliza y se enciende la flecha hacia donde va. */
 .hint {
-  position: absolute; z-index: 4; bottom: 22px; right: clamp(24px, 4.3vw, 90px); width: 46px;
-  color: var(--mc-label-color, var(--mc-texto-suave)); pointer-events: none; opacity: .8; transition: opacity .4s;
+  position: absolute; z-index: 4; bottom: 22px; right: clamp(24px, 4.3vw, 90px); width: var(--mc-mouse-size, 46px);
+  color: var(--mc-icon-color, var(--mc-label-color, var(--mc-texto-suave))); pointer-events: none;
+  opacity: var(--mc-icon-opacity, .8); transition: opacity .4s;
 }
 .hint svg { display: block; width: 100%; overflow: visible; }
 .hint .mouse { animation: hint-slide 2.4s ease-in-out infinite; }
@@ -4045,8 +4046,8 @@ h1 {
 .viewer.dragging ~ .hint, .hint.used { opacity: 0; }
 @keyframes hint-slide { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @keyframes hint-wheel { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
-@keyframes hint-left { 0%, 50%, 100% { opacity: .35; } 25% { opacity: 1; color: var(--mc-acento); } }
-@keyframes hint-right { 0%, 50%, 100% { opacity: .35; } 75% { opacity: 1; color: var(--mc-acento); } }
+@keyframes hint-left { 0%, 50%, 100% { opacity: .35; } 25% { opacity: 1; color: var(--mc-icon-accent, var(--mc-acento)); } }
+@keyframes hint-right { 0%, 50%, 100% { opacity: .35; } 75% { opacity: 1; color: var(--mc-icon-accent, var(--mc-acento)); } }
 .status { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding-left: 25%; font-size: 13px; color: var(--mc-texto-suave); pointer-events: none; }
 .fallback { position: absolute; inset: 0 0 0 30%; z-index: 2; display: none; background: center / contain no-repeat; }
 :host([data-failed]) .fallback { display: block; }
@@ -4074,15 +4075,15 @@ h1 {
    mientras se est\xE1 arriba de todo, y se esconden al empezar a descender. */
 .scroll-hint {
   position: absolute; z-index: 4; bottom: 18px; left: 50%; transform: translateX(-50%);
-  width: var(--mc-icon-size, 20px); color: var(--mc-label-color, var(--mc-texto-suave));
-  pointer-events: none; transition: opacity .5s;
+  width: var(--mc-arrows-size, 20px); color: var(--mc-icon-color, var(--mc-label-color, var(--mc-texto-suave)));
+  opacity: var(--mc-icon-opacity, 1); pointer-events: none; transition: opacity .5s;
 }
 .scroll-hint.hidden { opacity: 0; }
 .chevrons { display: flex; flex-direction: column; animation: hint-float 2.8s ease-in-out infinite; }
 .chevrons svg { display: block; width: 100%; overflow: visible; opacity: .55; animation: hint-glow 2.2s ease-in-out infinite; }
 .chevrons svg + svg { margin-top: -35%; animation-delay: .35s; }
 @keyframes hint-float { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(3px); } }
-@keyframes hint-glow { 0%, 60%, 100% { opacity: .55; } 25% { opacity: 1; color: var(--mc-acento); } }
+@keyframes hint-glow { 0%, 60%, 100% { opacity: .55; } 25% { opacity: 1; color: var(--mc-icon-accent, var(--mc-acento)); } }
 
 @media (max-width: 1200px) {
   .copy { left: clamp(80px, 8.5vw, 130px); max-width: 70vw; }
@@ -4115,7 +4116,7 @@ h1 {
   .hint, .btn, .water-fx, .scroll-hint { transition: none; }
   .hint *, .chevrons, .chevrons svg { animation: none !important; }
 }
-`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"numbers-color":["--mc-numbers-color"],"icon-size":["--mc-icon-size"]},Ux=`
+`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"numbers-color":["--mc-numbers-color"],"icon-color":["--mc-icon-color"],"icon-accent":["--mc-icon-accent"],"icon-opacity":["--mc-icon-opacity"],"mouse-size":["--mc-mouse-size"],"arrows-size":["--mc-arrows-size"]},Ux=`
   <svg viewBox="0 0 66 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <g class="arrow-l"><path d="M10 24h-7M7 20l-4 4 4 4"/></g>
     <g class="mouse"><rect x="24" y="9" width="18" height="30" rx="9"/><path d="M33 9v9M24 18h18" opacity=".5"/><path class="mouse-wheel" d="M33 13v2.5" stroke-width="2.2"/></g>
