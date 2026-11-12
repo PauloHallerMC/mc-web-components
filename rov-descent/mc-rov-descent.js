@@ -4054,9 +4054,10 @@ h1 {
 :host([data-failed]) .viewer, :host([data-failed]) .hint { display: none; }
 
 /* Profund\xEDmetro tipo tambor */
-.gauge { position: absolute; z-index: 4; left: clamp(14px, 2.25vw, 42px); top: 17%; height: 66%; width: clamp(108px, 8vw, 142px); pointer-events: none; user-select: none; color: #bddff2; }
+.gauge { position: absolute; z-index: 4; left: var(--mc-gauge-left, clamp(14px, 2.25vw, 42px)); top: var(--mc-gauge-top, 17%); height: 66%; width: clamp(108px, 8vw, 142px); pointer-events: none; user-select: none; color: #bddff2; }
 .gauge-title {
   position: absolute; top: -24px; left: 0; white-space: nowrap; opacity: .8; line-height: 1;
+  transform: translate(var(--mc-label-x, 0px), var(--mc-label-y, 0px));
   font-family: var(--mc-label-font, var(--mc-cuerpo)); font-size: var(--mc-label-size, 9px);
   font-weight: var(--mc-label-weight, 700); letter-spacing: var(--mc-label-spacing, 2px);
   color: var(--mc-label-color, var(--mc-texto-suave));
@@ -4116,7 +4117,7 @@ h1 {
   .hint, .btn, .water-fx, .scroll-hint { transition: none; }
   .hint *, .chevrons, .chevrons svg { animation: none !important; }
 }
-`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"numbers-color":["--mc-numbers-color"],"icon-color":["--mc-icon-color"],"icon-accent":["--mc-icon-accent"],"icon-opacity":["--mc-icon-opacity"],"mouse-size":["--mc-mouse-size"],"arrows-size":["--mc-arrows-size"]},Ux=`
+`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"label-x":["--mc-label-x"],"label-y":["--mc-label-y"],"gauge-left":["--mc-gauge-left"],"gauge-top":["--mc-gauge-top"],"numbers-color":["--mc-numbers-color"],"icon-color":["--mc-icon-color"],"icon-accent":["--mc-icon-accent"],"icon-opacity":["--mc-icon-opacity"],"mouse-size":["--mc-mouse-size"],"arrows-size":["--mc-arrows-size"]},Ux=`
   <svg viewBox="0 0 66 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <g class="arrow-l"><path d="M10 24h-7M7 20l-4 4 4 4"/></g>
     <g class="mouse"><rect x="24" y="9" width="18" height="30" rx="9"/><path d="M33 9v9M24 18h18" opacity=".5"/><path class="mouse-wheel" d="M33 13v2.5" stroke-width="2.2"/></g>
