@@ -3911,6 +3911,13 @@ void main() {
     );
     uv += wave * 0.0022 * surface;
 
+    // Rayos que se mecen: la columna de agua (sin la superficie ni las rocas) se desplaza de lado
+    // con ondas lentas, m\xE1s abajo m\xE1s, como los rayos que se mueven con las olas. Las rocas del
+    // fondo quedan quietas.
+    float column = smoothstep(0.08, 0.30, uv.y) * (1.0 - smoothstep(0.48, 0.72, uv.y));
+    float sway = sin(t * 0.38 + uv.x * 7.0) * 0.6 + sin(t * 0.23 - uv.x * 3.1 + 1.7) * 0.4;
+    uv.x += sway * 0.007 * column * (0.4 + uv.y);
+
     vec3 col = texture2D(uTex, clamp(uv, 0.001, 0.999)).rgb;
     float lum = dot(col, vec3(0.299, 0.587, 0.114));
 
@@ -3919,12 +3926,13 @@ void main() {
     float glint = sin(uv.x * 90.0 + t * 1.7 + wave.y * 2.0) * sin(uv.y * 160.0 - t * 1.3 + wave.x * 2.0);
     col += col * smoothstep(0.25, 0.7, lum) * max(glint, 0.0) * 0.45 * surface;
 
-    // Rayos que respiran: bandas lentas e inclinadas que suben y bajan el brillo de las zonas
-    // claras de la mitad de arriba. Se apagan al bajar, donde ya no llega el sol.
+    // Rayos que respiran: bandas inclinadas que viajan de lado y suben y bajan el brillo de las
+    // zonas claras, m\xE1s un pulso general lento. Se apagan al bajar, donde ya no llega el sol.
     float along = uv.x + uv.y * 0.18;
-    float breathe = sin(along * 38.0 + t * 0.45) * sin(along * 11.0 - t * 0.27 + 1.3);
-    float rays = smoothstep(0.10, 0.40, lum) * (1.0 - smoothstep(0.15, 0.85, uv.y)) * max(0.0, 1.0 - uDepth * 2.4);
-    col *= 1.0 + breathe * 0.16 * rays;
+    float breathe = sin(along * 34.0 - t * 0.75) * 0.65 + sin(along * 9.0 + t * 0.42 + 1.3) * 0.35;
+    float pulse = 0.85 + 0.15 * sin(t * 0.6);
+    float rays = smoothstep(0.08, 0.35, lum) * (1.0 - smoothstep(0.30, 0.62, uv.y)) * max(0.0, 1.0 - uDepth * 2.4);
+    col *= mix(1.0, pulse * (1.0 + breathe * 0.4), rays);
 
     // Grano de medio tono: rompe los escalones de los degradados oscuros (banding).
     col += (hash(gl_FragCoord.xy + fract(t) * 61.0) - 0.5) * (1.5 / 255.0);
