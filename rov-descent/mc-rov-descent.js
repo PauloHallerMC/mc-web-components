@@ -4074,14 +4074,15 @@ h1 {
   color: var(--mc-label-color, var(--mc-texto-suave));
 }
 .wheel { position: absolute; inset: 0; perspective: 1400px; perspective-origin: 49% 50%; transform-style: preserve-3d; }
-.tick { position: absolute; top: 50%; left: 0; width: 100%; height: 20px; display: flex; align-items: center; gap: 11px; white-space: nowrap; font: 500 10px/1 var(--mc-cuerpo); color: var(--mc-numbers-color, #9ec7dc); backface-visibility: hidden; transform-style: preserve-3d; will-change: transform, opacity; font-variant-numeric: tabular-nums; }
-.tick .line { display: block; flex: none; width: 7px; height: 1px; margin-left: 11px; background: #89b9d3; }
-.tick.major { font-size: 12px; font-weight: 600; color: var(--mc-numbers-color, #c4e0ef); }
-.tick.major .line { width: 14px; height: 2px; background: #acd8ee; }
+.tick { position: absolute; top: 50%; left: 0; width: 100%; height: 20px; display: flex; align-items: center; gap: 11px; white-space: nowrap; font: 500 10px/1 var(--mc-cuerpo); color: var(--mc-numbers-color, var(--mc-texto-suave)); backface-visibility: hidden; transform-style: preserve-3d; will-change: transform, opacity; font-variant-numeric: tabular-nums; }
+/* Colores de la paleta del sitio: marcas menores en texto suave, mayores en texto claro. */
+.tick .line { display: block; flex: none; width: 7px; height: 1px; margin-left: 11px; background: var(--mc-lines-color, var(--mc-texto-suave)); }
+.tick.major { font-size: 12px; font-weight: 600; color: var(--mc-numbers-color, var(--mc-texto)); }
+.tick.major .line { width: 14px; height: 2px; background: var(--mc-lines-color, var(--mc-texto)); }
 .tick.minor .text { display: none; }
-.needle { position: absolute; top: 50%; left: -2px; transform: translateY(-50%); height: 40px; width: 100%; display: flex; align-items: center; gap: 8px; z-index: 4; font: 700 16px/1 var(--mc-titulo); color: #f3fbff; font-variant-numeric: tabular-nums; text-shadow: 0 2px 16px rgba(14, 188, 250, .55), 0 2px 4px #001522; }
+.needle { position: absolute; top: 50%; left: -2px; transform: translateY(-50%); height: 40px; width: 100%; display: flex; align-items: center; gap: 8px; z-index: 4; font: 700 16px/1 var(--mc-titulo); color: var(--mc-needle-color, #ffffff); font-variant-numeric: tabular-nums; text-shadow: 0 2px 16px rgba(86, 172, 222, .55), 0 2px 4px #001522; }
 .needle .bar { position: relative; flex: none; width: 23px; height: 2px; background: var(--mc-acento); box-shadow: 0 0 12px var(--mc-acento); }
-.needle .bar::after { content: ''; position: absolute; right: -3px; top: -3px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid #b4ecff; background: var(--mc-acento); }
+.needle .bar::after { content: ''; position: absolute; right: -3px; top: -3px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--mc-texto); background: var(--mc-acento); }
 
 /* Flechas de bajar: flotan y un brillo celeste las recorre hacia abajo; siempre visibles
    mientras se est\xE1 arriba de todo, y se esconden al empezar a descender. */
@@ -4128,7 +4129,7 @@ h1 {
   .hint, .btn, .water-fx, .scroll-hint { transition: none; }
   .hint *, .chevrons, .chevrons svg { animation: none !important; }
 }
-`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"label-x":["--mc-label-x"],"label-y":["--mc-label-y"],"gauge-left":["--mc-gauge-left"],"gauge-top":["--mc-gauge-top"],"numbers-color":["--mc-numbers-color"],"icon-color":["--mc-icon-color"],"icon-accent":["--mc-icon-accent"],"icon-opacity":["--mc-icon-opacity"],"mouse-size":["--mc-mouse-size"],"arrows-size":["--mc-arrows-size"]},Ux=`
+`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"label-x":["--mc-label-x"],"label-y":["--mc-label-y"],"gauge-left":["--mc-gauge-left"],"gauge-top":["--mc-gauge-top"],"numbers-color":["--mc-numbers-color"],"lines-color":["--mc-lines-color"],"needle-color":["--mc-needle-color"],"icon-color":["--mc-icon-color"],"icon-accent":["--mc-icon-accent"],"icon-opacity":["--mc-icon-opacity"],"mouse-size":["--mc-mouse-size"],"arrows-size":["--mc-arrows-size"]},Ux=`
   <svg viewBox="0 0 66 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <g class="arrow-l"><path d="M10 24h-7M7 20l-4 4 4 4"/></g>
     <g class="mouse"><rect x="24" y="9" width="18" height="30" rx="9"/><path d="M33 9v9M24 18h18" opacity=".5"/><path class="mouse-wheel" d="M33 13v2.5" stroke-width="2.2"/></g>
