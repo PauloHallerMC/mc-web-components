@@ -4086,7 +4086,7 @@ h1 {
 .tick.major { font-size: 12px; font-weight: 600; color: var(--mc-numbers-color, var(--mc-texto)); }
 .tick.major .line { width: 14px; height: 2px; background: var(--mc-lines-color, var(--mc-texto)); }
 .tick.minor .text { display: none; }
-.needle { position: absolute; top: 50%; left: -2px; transform: translateY(-50%); height: 40px; width: 100%; display: flex; align-items: center; gap: 8px; z-index: 4; font: 700 16px/1 var(--mc-titulo); color: var(--mc-needle-color, #ffffff); font-variant-numeric: tabular-nums; text-shadow: 0 2px 16px rgba(86, 172, 222, .55), 0 2px 4px #001522; }
+.needle { position: absolute; top: 50%; left: -2px; transform: translateY(-50%); height: 40px; width: 100%; display: flex; white-space: nowrap; align-items: center; gap: 8px; z-index: 4; font: 700 16px/1 var(--mc-titulo); color: var(--mc-needle-color, #ffffff); font-variant-numeric: tabular-nums; text-shadow: 0 2px 16px rgba(86, 172, 222, .55), 0 2px 4px #001522; }
 .needle .bar { position: relative; flex: none; width: 23px; height: 2px; background: var(--mc-acento); box-shadow: 0 0 12px var(--mc-acento); }
 .needle .bar::after { content: ''; position: absolute; right: -3px; top: -3px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--mc-texto); background: var(--mc-acento); }
 
@@ -4121,7 +4121,8 @@ h1 {
 @media (max-width: 750px) {
   .stage { min-height: 640px; }
   /* El ROV se corre un poco a la derecha para dejarle una franja libre al profund\xEDmetro. */
-  .viewer { inset: 31% -20% 6% 7%; cursor: default; }
+  /* El visor llega hasta abajo: si termina antes, los haces de las luces se cortan en una l\xEDnea. */
+  .viewer { inset: 31% -20% 0 7%; cursor: default; }
   .copy { top: 11%; left: 46px; right: 18px; transform: none; max-width: none; }
   h1 { font-size: clamp(34px, 8.8vw, 56px); margin: 14px 0 12px; }
   .sub { font-size: clamp(18px, 4.6vw, 24px); }
