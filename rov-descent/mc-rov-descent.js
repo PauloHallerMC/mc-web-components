@@ -4121,8 +4121,9 @@ h1 {
 @media (max-width: 750px) {
   .stage { min-height: 640px; }
   /* El ROV se corre un poco a la derecha para dejarle una franja libre al profund\xEDmetro. */
-  /* El visor llega hasta abajo: si termina antes, los haces de las luces se cortan en una l\xEDnea. */
-  .viewer { inset: 31% -20% 0 7%; cursor: default; }
+  /* El visor llega hasta abajo (si termina antes, los haces se cortan en una l\xEDnea) y deja a la
+     izquierda una franja libre de ~64 px para el profund\xEDmetro, as\xED no chocan. */
+  .viewer { inset: 31% -28% 0 17%; cursor: default; }
   .copy { top: 11%; left: 46px; right: 18px; transform: none; max-width: none; }
   h1 { font-size: clamp(34px, 8.8vw, 56px); margin: 14px 0 12px; }
   .sub { font-size: clamp(18px, 4.6vw, 24px); }
@@ -4132,7 +4133,9 @@ h1 {
   /* En celular no se puede girar con el dedo (el dedo hace scroll): la ayuda sobra. */
   .hint { display: none; }
   /* Profund\xEDmetro compacto: solo n\xFAmeros y rayas, sin t\xEDtulo, en la franja izquierda. */
-  .gauge { left: 6px; top: 56%; height: 32%; width: 58px; }
+  /* Centrado en la pantalla por defecto; con los textos de la hero arriba se baja con
+     gauge-top-mobile (ej. 56%). */
+  .gauge { left: 6px; top: var(--mc-gauge-top-mobile, 34%); height: 32%; width: 58px; }
   .gauge-title { display: none; }
   .tick { gap: 5px; font-size: 8px; }
   .tick .line { margin-left: 6px; width: 5px; }
@@ -4146,7 +4149,7 @@ h1 {
   .hint, .btn, .water-fx, .scroll-hint { transition: none; }
   .hint *, .chevrons, .chevrons svg, .scroll-mouse * { animation: none !important; }
 }
-`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"label-x":["--mc-label-x"],"label-y":["--mc-label-y"],"gauge-left":["--mc-gauge-left"],"gauge-top":["--mc-gauge-top"],"numbers-color":["--mc-numbers-color"],"lines-color":["--mc-lines-color"],"needle-color":["--mc-needle-color"],"icon-color":["--mc-icon-color"],"icon-accent":["--mc-icon-accent"],"icon-opacity":["--mc-icon-opacity"],"mouse-size":["--mc-mouse-size"],"arrows-size":["--mc-arrows-size"],"scroll-size":["--mc-scroll-size"]},Ux=`
+`;var Dx=.08,id={"label-font":["--mc-label-font",s=>`'${s.replace(/['";]/g,"")}', 'Inter', Arial, sans-serif`],"label-size":["--mc-label-size"],"label-weight":["--mc-label-weight"],"label-color":["--mc-label-color"],"label-spacing":["--mc-label-spacing"],"label-x":["--mc-label-x"],"label-y":["--mc-label-y"],"gauge-left":["--mc-gauge-left"],"gauge-top":["--mc-gauge-top"],"gauge-top-mobile":["--mc-gauge-top-mobile"],"numbers-color":["--mc-numbers-color"],"lines-color":["--mc-lines-color"],"needle-color":["--mc-needle-color"],"icon-color":["--mc-icon-color"],"icon-accent":["--mc-icon-accent"],"icon-opacity":["--mc-icon-opacity"],"mouse-size":["--mc-mouse-size"],"arrows-size":["--mc-arrows-size"],"scroll-size":["--mc-scroll-size"]},Ux=`
   <svg viewBox="0 0 66 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <g class="arrow-l"><path d="M10 24h-7M7 20l-4 4 4 4"/></g>
     <g class="mouse"><rect x="24" y="9" width="18" height="30" rx="9"/><path d="M33 9v9M24 18h18" opacity=".5"/><path class="mouse-wheel" d="M33 13v2.5" stroke-width="2.2"/></g>
