@@ -4131,7 +4131,7 @@ h1 {
 /* Tablet vertical: con el dise\xF1o de escritorio el ROV quedaba gigante detr\xE1s de los textos.
    Como en celular, el ROV baja a la mitad inferior y deja arriba el espacio para los textos. */
 @media (min-width: 751px) and (max-width: 1100px) and (orientation: portrait) {
-  .viewer { inset: 42% -8% 0 10%; cursor: default; }
+  .viewer { inset: 36% -8% 0 10%; cursor: default; }
   .hint { display: none; }
   .gauge { top: var(--mc-gauge-top-tablet, 50%); height: 40%; }
 }
@@ -4140,7 +4140,7 @@ h1 {
   /* El ROV se corre un poco a la derecha para dejarle una franja libre al profund\xEDmetro. */
   /* El visor llega hasta abajo (si termina antes, los haces se cortan en una l\xEDnea) y deja a la
      izquierda una franja libre de ~64 px para el profund\xEDmetro, as\xED no chocan. */
-  .viewer { inset: 31% -28% 0 17%; cursor: default; }
+  .viewer { inset: 40% -28% 0 17%; cursor: default; }
   .copy { top: 11%; left: 46px; right: 18px; transform: none; max-width: none; }
   h1 { font-size: clamp(34px, 8.8vw, 56px); margin: 14px 0 12px; }
   .sub { font-size: clamp(18px, 4.6vw, 24px); }
@@ -4150,9 +4150,9 @@ h1 {
   /* En celular no se puede girar con el dedo (el dedo hace scroll): la ayuda sobra. */
   .hint { display: none; }
   /* Profund\xEDmetro compacto: solo n\xFAmeros y rayas, sin t\xEDtulo, en la franja izquierda. */
-  /* Centrado en la pantalla por defecto; con los textos de la hero arriba se baja con
-     gauge-top-mobile (ej. 56%). */
-  .gauge { left: 6px; top: var(--mc-gauge-top-mobile, 34%); height: 32%; width: 58px; }
+  /* Por defecto bajo los textos de la hero, que en Wix van arriba; se ajusta con
+     gauge-top-mobile. */
+  .gauge { left: 6px; top: var(--mc-gauge-top-mobile, 56%); height: 32%; width: 58px; }
   .gauge-title { display: none; }
   .tick { gap: 5px; font-size: 8px; }
   .tick .line { margin-left: 6px; width: 5px; }
