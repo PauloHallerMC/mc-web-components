@@ -4150,8 +4150,10 @@ h1 {
   /* En celular no se puede girar con el dedo (el dedo hace scroll): la ayuda sobra. */
   .hint { display: none; }
   /* Profund\xEDmetro compacto en la franja izquierda, bajo los textos de la hero (que en Wix van
-     arriba); se ajusta con gauge-top-mobile. */
-  .gauge { left: 6px; top: var(--mc-gauge-top-mobile, 45%); height: 32%; width: 58px; }
+     arriba y miden ~330 px): con la barra del navegador la pantalla es baja y un porcentaje solo
+     lo dejaba encima de los botones, as\xED que nunca empieza antes de 390 px. Se ajusta con
+     gauge-top-mobile. */
+  .gauge { left: 6px; top: var(--mc-gauge-top-mobile, max(45%, 390px)); height: 30%; width: 58px; }
   .gauge-title { top: -18px; font-size: min(var(--mc-label-size, 9px), 8px); letter-spacing: 1.5px; }
   .tick { gap: 5px; font-size: 8px; }
   .tick .line { margin-left: 6px; width: 5px; }
