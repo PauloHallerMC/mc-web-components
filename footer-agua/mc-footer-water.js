@@ -1,75 +1,93 @@
-var m="attribute vec2 p; void main(){ gl_Position = vec4(p, 0., 1.); }",f=`precision highp float;
-uniform vec2 uRes;
+var m=`#version 300 es
+in vec2 p;
+void main() { gl_Position = vec4(p, 0.0, 1.0); }`,p=`#version 300 es
+precision highp float;
+uniform vec2 uRes;        // tama\xF1o del canvas en p\xEDxeles reales
+uniform float uDpr;       // p\xEDxeles reales por p\xEDxel CSS
 uniform float uTime;
-uniform vec2 uMouse;
-uniform float uInt;
-uniform float uScale;
-uniform float uMode;      // 0 = solo c\xE1usticas, 1 = solo ondas, 2 = mezcla
-uniform sampler2D uH;
+uniform vec2 uMouse;      // en p\xEDxeles reales, origen abajo; muy negativo = sin mouse
+uniform float uInt;       // intensidad
+uniform float uLam;       // largo base de las ondas del oleaje, en px CSS
+uniform float uSwell;     // fuerza del oleaje
+uniform float uFoc;       // nitidez: cu\xE1nto enfoca la superficie
+uniform float uAb;        // 1 = aberraci\xF3n crom\xE1tica
+uniform float uRipK;      // cu\xE1nto doblan la luz las ondas de las gotas
+uniform sampler2D uH;     // alturas de las ondas de las gotas
 uniform vec2 uHTexel;
+uniform float uCell;      // px CSS por celda de la malla
+out vec4 outColor;
 
-// Patr\xF3n de c\xE1usticas: interferencia de tres ondas sobre un espacio deformado. Los cruces por
-// cero se vuelven cintas de luz; un n\xFAcleo fino y un halo ancho dan el aspecto de reflejo.
-float field(vec2 q, float t) {
-  vec2 u = q + 0.6 * vec2(sin(q.y * 1.3 + t * 0.6), sin(q.x * 1.1 - t * 0.5));
-  u += 0.25 * vec2(sin(u.y * 2.7 - t * 0.8 + 1.7), cos(u.x * 2.3 + t * 0.7));
-  return sin(u.x * 3.0 + t * 0.7) + sin(u.y * 3.4 - t * 0.6) + sin((u.x + u.y) * 2.2 + t * 0.4);
+const int WAVES = 16;
+float rnd(float n) { return fract(sin(n * 91.345) * 47453.21); }
+
+// Oleaje: muchas ondas de distinto largo y direcci\xF3n. Las cortas forman la red fina de l\xEDneas;
+// las largas la deforman para que no se vea igual en todas partes.
+mat2 swellCurvature(vec2 x, float t) {
+  mat2 H = mat2(0.0);
+  for (int i = 0; i < WAVES; i++) {
+    float fi = float(i);
+    float ang = fi * 2.39996 + rnd(fi) * 0.8;      // \xE1ngulo \xE1ureo + azar: direcciones repartidas
+    vec2 d = vec2(cos(ang), sin(ang));
+    float k = 6.2831853 / (uLam * (0.45 + 1.1 * rnd(fi + 7.0)));
+    float w = sqrt(k) * 6.0;                         // las largas viajan m\xE1s r\xE1pido, como en el mar
+    float ph = k * dot(d, x) - w * t + rnd(fi + 3.0) * 6.2831;
+    float s = 0.13 * uSwell * (0.6 + 0.8 * rnd(fi + 11.0));
+    H -= s * sin(ph) * mat2(d.x * d.x, d.x * d.y, d.x * d.y, d.y * d.y);
+  }
+  return H;
 }
 
-float caustic(vec2 q, float t) {
-  float c = abs(field(q, t));
-  float core = pow(max(0.0, 1.0 - c / 1.1), 9.0);
-  float halo = pow(max(0.0, 1.0 - c / 1.6), 3.0);
-  float c2 = abs(field(q * 1.9 + vec2(4.3, 2.1), t * 1.25 + 3.0));
-  float fine = pow(max(0.0, 1.0 - c2), 10.0);
-  // Zonas m\xE1s y menos iluminadas, como el sol pasando entre olas m\xE1s grandes.
-  float patch = 0.65 + 0.35 * sin(q.x * 0.55 + t * 0.25) * sin(q.y * 0.7 - t * 0.2);
-  return (core + halo * 0.28 + fine * 0.35) * patch;
-}
+float h(vec2 uv) { return texture(uH, uv).r; }
 
-float hgt(vec2 uv) { return texture2D(uH, uv).r - 0.5; }
+// Luz que llega a un punto: 1 / |det(I + f\xB7H)|. Se muestra solo donde se concentra de verdad,
+// para que las l\xEDneas salgan finas, y se satura suave para que no se quemen.
+float focus(mat2 H, float f) {
+  mat2 J = mat2(1.0) + f * uFoc * H;
+  float det = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+  float I = 1.0 / max(abs(det), 0.02);
+  float v = max(I - 2.4, 0.0);
+  return pow(v / (v + 5.0), 1.3) * 1.6 + 0.10 * max(I - 1.0, 0.0) / (I + 1.0);
+}
 
 void main() {
   vec2 px = gl_FragCoord.xy;
-  vec2 uv = px / uRes;
-  vec2 pxTop = vec2(px.x, uRes.y - px.y);
+  vec2 top = vec2(px.x, uRes.y - px.y) / uDpr;           // px CSS, y hacia abajo
+  vec2 uvH = vec2(px.x / uRes.x, 1.0 - px.y / uRes.y);
 
-  // Inclinaci\xF3n de la superficie: desplaza la luz (refracci\xF3n) y genera brillos. La altura
-  // llega en 8 bits, as\xED que la pendiente se promedia a 1 y 2 celdas para que no se escalone.
+  // Curvatura y pendiente de las ondas de las gotas, por diferencias en la malla.
   vec2 tx = vec2(uHTexel.x, 0.0), ty = vec2(0.0, uHTexel.y);
-  float hx = (hgt(uv + tx) - hgt(uv - tx)) + 0.5 * (hgt(uv + 2.0 * tx) - hgt(uv - 2.0 * tx));
-  float hy = (hgt(uv + ty) - hgt(uv - ty)) + 0.5 * (hgt(uv + 2.0 * ty) - hgt(uv - 2.0 * ty));
-  vec2 slope = vec2(hx, hy) * 0.5;
+  float h0 = h(uvH), hxp = h(uvH + tx), hxm = h(uvH - tx), hyp = h(uvH + ty), hym = h(uvH - ty);
+  float c2 = uCell * uCell;
+  float hxx = (hxp - 2.0 * h0 + hxm) / c2;
+  float hyy = (hyp - 2.0 * h0 + hym) / c2;
+  float hxy = (h(uvH + tx + ty) - h(uvH + tx - ty) - h(uvH - tx + ty) + h(uvH - tx - ty)) / (4.0 * c2);
+  mat2 Hr = uRipK * mat2(hxx, hxy, hxy, hyy);
+  vec2 gr = uRipK * vec2(hxp - hxm, hyp - hym) / (2.0 * uCell);
 
-  vec3 col = vec3(0.0);
-  vec2 q = pxTop / (95.0 * uScale);
-  if (uMode != 1.0) {
-    vec2 qq = q + (uMode == 2.0 ? slope * 6.0 : vec2(0.0));
-    // Leve separaci\xF3n de color, como la dispersi\xF3n de la luz en el agua.
-    float r = caustic(qq + vec2(0.012, 0.0), uTime);
-    float g = caustic(qq, uTime);
-    float b = caustic(qq - vec2(0.012, 0.0), uTime);
-    col += vec3(r * 0.62, g * 0.86, b) * 0.17;
-  }
-  if (uMode != 0.0) {
-    float s = length(slope);
-    vec3 n = normalize(vec3(-slope * 14.0, 1.0));
-    float spec = pow(clamp(dot(n, normalize(vec3(0.35, 0.55, 1.0))), 0.0, 1.0), 40.0);
-    col += vec3(0.55, 0.80, 1.0) * (s * 2.4 + spec * 0.35) * (uMode == 2.0 ? 0.8 : 1.0);
-  }
+  mat2 H = swellCurvature(top, uTime) + Hr;
+
+  // Dispersi\xF3n: cada color se enfoca a una distancia apenas distinta y en los bordes de las
+  // l\xEDneas aparecen franjas de color, como en el agua real.
+  float fr = 1.0 - 0.022 * uAb, fb = 1.0 + 0.03 * uAb;
+  vec3 caus = vec3(focus(H, fr), focus(H, 1.0), focus(H, fb));
+  vec3 col = caus * vec3(0.55, 0.82, 1.0) * 0.19;
+
+  // Brillo en las crestas de las ondas de las gotas.
+  vec3 n = normalize(vec3(-gr * 3.0, 1.0));
+  float spec = pow(max(dot(n, normalize(vec3(0.3, -0.5, 1.0))), 0.0), 90.0);
+  col += vec3(0.75, 0.9, 1.0) * spec * 0.10 * clamp(length(gr) * 12.0, 0.0, 1.0);
 
   // Luz desde arriba y foco del mouse: el foco solo ilumina, no mueve el dibujo.
-  float fall = mix(1.0, 0.5, pxTop.y / uRes.y);
+  float fall = mix(1.0, 0.5, top.y / (uRes.y / uDpr));
   float md = uMouse.x < -999.0 ? 1e9 : length(px - uMouse);
-  float spot = exp(-(md * md) / (2.0 * 170.0 * 170.0 * uScale * uScale));
+  float spot = exp(-(md * md) / (2.0 * 170.0 * 170.0 * uDpr * uDpr));
   col *= uInt * fall * (1.0 + 2.2 * spot);
   col += vec3(0.20, 0.42, 0.62) * spot * 0.05 * uInt;
 
-  // Salida con alfa premultiplicado: el canvas solo aporta luz sobre el fondo del footer, sin
-  // depender de modos de mezcla que Wix podr\xEDa aislar.
+  // Alfa premultiplicado: el canvas solo aporta luz sobre el fondo del footer.
   float a = clamp(max(col.r, max(col.g, col.b)), 0.0, 1.0);
-  gl_FragColor = vec4(min(col, vec3(1.0)), a);
-}`;var u=class{resize(t,e){this.w=t,this.h=e,this.gw=Math.max(3,Math.ceil(t/3)),this.gh=Math.max(3,Math.ceil(e/3)),this.cur=new Float32Array(this.gw*this.gh),this.prev=new Float32Array(this.gw*this.gh),this.bytes=new Uint8Array(this.gw*this.gh)}clear(){this.cur.fill(0),this.prev.fill(0)}drop(t,e,s,o){let i=Math.round(t/3),n=Math.round(e/3);for(let r=-o;r<=o;r++)for(let l=-o;l<=o;l++){let h=i+l,d=n+r;h>0&&d>0&&h<this.gw-1&&d<this.gh-1&&(this.cur[d*this.gw+h]+=s*Math.exp(-(l*l+r*r)/(o*.6)))}}step(){let{gw:t,gh:e}=this,s=this.cur,o=this.prev;for(let i=1;i<e-1;i++)for(let n=1;n<t-1;n++){let r=i*t+n;o[r]=((s[r-1]+s[r+1]+s[r-t]+s[r+t])*.5-o[r])*.985}this.cur=o,this.prev=s}toBytes(){let{gw:t,gh:e,bytes:s,cur:o}=this;for(let i=0;i<e;i++){let n=(e-1-i)*t,r=i*t;for(let l=0;l<t;l++){let h=128+o[r+l]*90;s[n+l]=h<0?0:h>255?255:h}}return s}};var c={caustics:0,ripples:1,mix:2},x=30,g=1.5,a=-99999,p=class extends HTMLElement{static get observedAttributes(){return["mode","intensity","scale","speed","drop-interval"]}connectedCallback(){this.root||(this.root=this.attachShadow({mode:"open"}),this.root.innerHTML=`<style>
+  outColor = vec4(min(col, vec3(1.0)), a);
+}`;var d=class{constructor(){this.cell=3}resize(t,s){this.w=t,this.h=s,this.gw=Math.ceil(t/3)+1,this.gh=Math.ceil(s/3)+1;let e=this.gw*this.gh;this.cur=new Float32Array(e),this.prev=new Float32Array(e),this.tmp=new Float32Array(e),this.damp=new Float32Array(e);for(let r=0;r<this.gh;r++)for(let i=0;i<this.gw;i++){let n=Math.min(i,r,this.gw-1-i,this.gh-1-r),a=n>=14?1:.8+.2*(n/14)**2;this.damp[r*this.gw+i]=.982*a}}drop(t,s,e=1.2){let r=t/3,i=s/3,n=2.3,a=7;for(let u=-a;u<=a;u++)for(let c=-a;c<=a;c++){let l=Math.round(r)+c,o=Math.round(i)+u;if(l<1||o<1||l>=this.gw-1||o>=this.gh-1)continue;let g=(l-r)**2+(o-i)**2;this.cur[o*this.gw+l]-=e*Math.exp(-g/(2*n*n))}}step(){let{gw:t,gh:s,cur:e,prev:r,tmp:i,damp:n}=this;for(let c=1;c<s-1;c++)for(let l=1;l<t-1;l++){let o=c*t+l;i[o]=((e[o-1]+e[o+1]+e[o-t]+e[o+t])*.5-r[o])*n[o]}let a=1-.14,u=.14/4;for(let c=1;c<s-1;c++)for(let l=1;l<t-1;l++){let o=c*t+l;r[o]=i[o]*a+(i[o-1]+i[o+1]+i[o-t]+i[o+t])*u}this.cur=r,this.prev=e}};var x=30,E=1.5,h=-99999,y=440,w=160,f=class extends HTMLElement{static get observedAttributes(){return["intensity","scale","sharpness","swell","speed","drop-interval","drop-strength","aberration"]}connectedCallback(){this.root||(this.root=this.attachShadow({mode:"open"}),this.root.innerHTML=`<style>
       :host { display: block; position: relative; width: 100%; height: 100%; pointer-events: none; }
       canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-    </style><canvas aria-hidden="true"></canvas>`,this.canvas=this.root.querySelector("canvas"),this.reducedMotion=matchMedia("(prefers-reduced-motion: reduce)").matches,this.readAttributes(),this.initGL()&&(this.ripples=new u,this.mouse={x:a,y:a,sx:a,sy:a,px:a,py:a},this.clock=0,this.simClock=0,this.nextDrop=1,this.bindEvents(),this.resize(),this.start()))}attributeChangedCallback(){this.root&&this.readAttributes()}readAttributes(){let t=(s,o)=>{let i=parseFloat(this.getAttribute(s));return Number.isFinite(i)&&i>0?i:o},e=(this.getAttribute("mode")||"mix").trim().toLowerCase();this.mode=e in c?c[e]:c.mix,this.intensity=t("intensity",1),this.scale=t("scale",1),this.speed=t("speed",1),this.dropInterval=t("drop-interval",this.mode===c.ripples?2.5:5)}initGL(){let t=this.canvas.getContext("webgl",{antialias:!1,premultipliedAlpha:!0,alpha:!0});if(!t)return!1;let e=(i,n)=>{let r=t.createShader(i);if(t.shaderSource(r,n),t.compileShader(r),!t.getShaderParameter(r,t.COMPILE_STATUS))throw new Error(t.getShaderInfoLog(r));return r};try{let i=t.createProgram();t.attachShader(i,e(t.VERTEX_SHADER,m)),t.attachShader(i,e(t.FRAGMENT_SHADER,f)),t.linkProgram(i),t.useProgram(i),this.prog=i}catch(i){return console.error("[mc-footer-water]",i),!1}this.quad=t.createBuffer(),t.bindBuffer(t.ARRAY_BUFFER,this.quad),t.bufferData(t.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),t.STATIC_DRAW);let s=t.getAttribLocation(this.prog,"p");t.enableVertexAttribArray(s),t.vertexAttribPointer(s,2,t.FLOAT,!1,0,0),this.tex=t.createTexture(),t.bindTexture(t.TEXTURE_2D,this.tex),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MIN_FILTER,t.LINEAR),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MAG_FILTER,t.LINEAR),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_WRAP_S,t.CLAMP_TO_EDGE),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_WRAP_T,t.CLAMP_TO_EDGE),t.pixelStorei(t.UNPACK_ALIGNMENT,1);let o=i=>t.getUniformLocation(this.prog,i);return this.u={res:o("uRes"),time:o("uTime"),mouse:o("uMouse"),int:o("uInt"),scale:o("uScale"),mode:o("uMode"),h:o("uH"),ht:o("uHTexel")},t.clearColor(0,0,0,0),this.gl=t,this.canvas.addEventListener("webglcontextlost",i=>{i.preventDefault(),this.stop()}),!0}bindEvents(){this.resizeObserver=new ResizeObserver(()=>this.resize()),this.resizeObserver.observe(this),this.visible=!1,this.io=new IntersectionObserver(([t])=>{this.visible=t.isIntersecting,this.visible?this.start():this.stop()}),this.io.observe(this),this.onPointer=t=>{if(t.pointerType==="touch")return;let e=this.getBoundingClientRect(),s=t.clientX>=e.left&&t.clientX<=e.right&&t.clientY>=e.top&&t.clientY<=e.bottom;this.mouse.x=s?t.clientX-e.left:a,this.mouse.y=s?t.clientY-e.top:a},this.onLeave=()=>{this.mouse.x=this.mouse.y=a},window.addEventListener("pointermove",this.onPointer,{passive:!0}),document.addEventListener("pointerleave",this.onLeave)}resize(){let t=this.getBoundingClientRect();t.width<2||t.height<2||(this.dpr=Math.min(window.devicePixelRatio||1,g),this.canvas.width=Math.round(t.width*this.dpr),this.canvas.height=Math.round(t.height*this.dpr),this.gl.viewport(0,0,this.canvas.width,this.canvas.height),this.ripples.resize(t.width,t.height),this.draw())}start(){if(this.raf||!this.gl||this.reducedMotion){this.gl&&this.draw();return}this.last=performance.now();let t=e=>{if(this.raf=requestAnimationFrame(t),e-this.last<1e3/x-2)return;let s=Math.min((e-this.last)/1e3,.1);this.last=e,this.update(s),this.draw()};this.raf=requestAnimationFrame(t)}stop(){cancelAnimationFrame(this.raf),this.raf=0}update(t){this.clock+=t*.5*this.speed,this.simClock+=t;let e=this.mouse,s=this.ripples;this.mode!==c.caustics&&(this.mode===c.ripples&&e.x!==a&&Math.hypot(e.x-e.px,e.y-e.py)>3&&s.drop(e.x,e.y,.35,2),this.simClock>this.nextDrop&&(s.drop(Math.random()*s.w,Math.random()*s.h,1.6,4),this.nextDrop=this.simClock+this.dropInterval*(.7+Math.random()*.6)),s.step(),this.speed>1.2&&s.step()),e.px=e.x,e.py=e.y,e.x===a?e.sx=e.sy=a:e.sx===a?(e.sx=e.x,e.sy=e.y):(e.sx+=(e.x-e.sx)*.15,e.sy+=(e.y-e.sy)*.15)}draw(){let{gl:t,u:e,ripples:s,canvas:o,dpr:i}=this;if(!t||!s||!s.bytes)return;t.bindTexture(t.TEXTURE_2D,this.tex),t.texImage2D(t.TEXTURE_2D,0,t.LUMINANCE,s.gw,s.gh,0,t.LUMINANCE,t.UNSIGNED_BYTE,s.toBytes()),t.uniform2f(e.res,o.width,o.height),t.uniform1f(e.time,this.clock);let n=this.mouse;t.uniform2f(e.mouse,n.sx===a?a:n.sx*i,o.height-n.sy*i),t.uniform1f(e.int,this.intensity),t.uniform1f(e.scale,this.scale*i),t.uniform1f(e.mode,this.mode),t.uniform1i(e.h,0),t.uniform2f(e.ht,1/s.gw,1/s.gh),t.clear(t.COLOR_BUFFER_BIT),t.drawArrays(t.TRIANGLE_STRIP,0,4)}disconnectedCallback(){this.stop(),this.resizeObserver?.disconnect(),this.io?.disconnect(),window.removeEventListener("pointermove",this.onPointer),document.removeEventListener("pointerleave",this.onLeave),this.gl&&(this.gl.deleteTexture(this.tex),this.gl.deleteBuffer(this.quad),this.gl.deleteProgram(this.prog),this.gl.getExtension("WEBGL_lose_context")?.loseContext()),this.gl=null,this.root=null}};customElements.get("mc-footer-water")||customElements.define("mc-footer-water",p);
+    </style><canvas aria-hidden="true"></canvas>`,this.canvas=this.root.querySelector("canvas"),this.reducedMotion=matchMedia("(prefers-reduced-motion: reduce)").matches,this.readAttributes(),this.initGL()&&(this.ripples=new d,this.mouse={x:h,y:h,sx:h,sy:h},this.clock=0,this.simClock=0,this.nextDrop=1,this.bindEvents(),this.resize(),this.start()))}attributeChangedCallback(){this.root&&this.readAttributes()}readAttributes(){let t=(s,e,r=!1)=>{let i=parseFloat(this.getAttribute(s));return Number.isFinite(i)&&(i>0||r&&i===0)?i:e};this.intensity=t("intensity",1.25),this.scale=t("scale",1),this.sharpness=t("sharpness",5),this.swell=t("swell",1),this.speed=t("speed",1),this.dropInterval=t("drop-interval",5,!0),this.dropStrength=t("drop-strength",1),this.aberration=(this.getAttribute("aberration")||"").trim().toLowerCase()!=="off"}initGL(){let t=this.canvas.getContext("webgl2",{antialias:!1,premultipliedAlpha:!0,alpha:!0});if(!t)return!1;let s=(i,n)=>{let a=t.createShader(i);if(t.shaderSource(a,n),t.compileShader(a),!t.getShaderParameter(a,t.COMPILE_STATUS))throw new Error(t.getShaderInfoLog(a));return a};try{let i=t.createProgram();if(t.attachShader(i,s(t.VERTEX_SHADER,m)),t.attachShader(i,s(t.FRAGMENT_SHADER,p)),t.linkProgram(i),!t.getProgramParameter(i,t.LINK_STATUS))throw new Error(t.getProgramInfoLog(i));t.useProgram(i),this.prog=i}catch(i){return console.error("[mc-footer-water]",i),!1}this.quad=t.createBuffer(),t.bindBuffer(t.ARRAY_BUFFER,this.quad),t.bufferData(t.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),t.STATIC_DRAW);let e=t.getAttribLocation(this.prog,"p");t.enableVertexAttribArray(e),t.vertexAttribPointer(e,2,t.FLOAT,!1,0,0),this.tex=t.createTexture(),t.bindTexture(t.TEXTURE_2D,this.tex),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MIN_FILTER,t.LINEAR),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_MAG_FILTER,t.LINEAR),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_WRAP_S,t.CLAMP_TO_EDGE),t.texParameteri(t.TEXTURE_2D,t.TEXTURE_WRAP_T,t.CLAMP_TO_EDGE),t.pixelStorei(t.UNPACK_ALIGNMENT,1);let r=i=>t.getUniformLocation(this.prog,i);return this.u={res:r("uRes"),dpr:r("uDpr"),time:r("uTime"),mouse:r("uMouse"),int:r("uInt"),lam:r("uLam"),swell:r("uSwell"),foc:r("uFoc"),ab:r("uAb"),ripk:r("uRipK"),h:r("uH"),ht:r("uHTexel"),cell:r("uCell")},t.clearColor(0,0,0,0),this.gl=t,this.canvas.addEventListener("webglcontextlost",i=>{i.preventDefault(),this.stop()}),!0}bindEvents(){this.resizeObserver=new ResizeObserver(()=>this.resize()),this.resizeObserver.observe(this),this.io=new IntersectionObserver(([t])=>{t.isIntersecting?this.start():this.stop()}),this.io.observe(this),this.onPointer=t=>{if(t.pointerType==="touch")return;let s=this.getBoundingClientRect(),e=t.clientX>=s.left&&t.clientX<=s.right&&t.clientY>=s.top&&t.clientY<=s.bottom;this.mouse.x=e?t.clientX-s.left:h,this.mouse.y=e?t.clientY-s.top:h},this.onLeave=()=>{this.mouse.x=this.mouse.y=h},window.addEventListener("pointermove",this.onPointer,{passive:!0}),document.addEventListener("pointerleave",this.onLeave)}resize(){let t=this.getBoundingClientRect();t.width<2||t.height<2||!this.gl||(this.dpr=Math.min(window.devicePixelRatio||1,E),this.canvas.width=Math.round(t.width*this.dpr),this.canvas.height=Math.round(t.height*this.dpr),this.gl.viewport(0,0,this.canvas.width,this.canvas.height),this.ripples.resize(t.width,t.height),this.draw())}start(){if(!this.gl)return;if(this.reducedMotion){this.draw();return}if(this.raf)return;this.last=performance.now();let t=s=>{if(this.raf=requestAnimationFrame(t),s-this.last<1e3/x-2)return;let e=Math.min((s-this.last)/1e3,.1);this.last=s,this.update(e),this.draw()};this.raf=requestAnimationFrame(t)}stop(){cancelAnimationFrame(this.raf),this.raf=0}update(t){this.clock+=t*.5*this.speed,this.simClock+=t;let s=this.ripples;this.dropInterval>0&&this.simClock>this.nextDrop&&(s.drop(40+Math.random()*Math.max(s.w-80,1),30+Math.random()*Math.max(s.h-60,1)),this.nextDrop=this.simClock+this.dropInterval*(.7+Math.random()*.6)),s.step();let e=this.mouse;e.x===h?e.sx=e.sy=h:e.sx===h?(e.sx=e.x,e.sy=e.y):(e.sx+=(e.x-e.sx)*.15,e.sy+=(e.y-e.sy)*.15)}draw(){let{gl:t,u:s,ripples:e,canvas:r,dpr:i}=this;if(!t||!e||!e.cur)return;t.bindTexture(t.TEXTURE_2D,this.tex),t.texImage2D(t.TEXTURE_2D,0,t.R16F,e.gw,e.gh,0,t.RED,t.FLOAT,e.cur),t.uniform2f(s.res,r.width,r.height),t.uniform1f(s.dpr,i),t.uniform1f(s.time,this.clock);let n=this.mouse;t.uniform2f(s.mouse,n.sx===h?h:n.sx*i,r.height-n.sy*i),t.uniform1f(s.int,this.intensity),t.uniform1f(s.lam,y*this.scale),t.uniform1f(s.swell,this.swell),t.uniform1f(s.foc,this.sharpness),t.uniform1f(s.ab,this.aberration?1:0),t.uniform1f(s.ripk,w*this.dropStrength),t.uniform1i(s.h,0),t.uniform2f(s.ht,1/e.gw,1/e.gh),t.uniform1f(s.cell,e.cell),t.clear(t.COLOR_BUFFER_BIT),t.drawArrays(t.TRIANGLE_STRIP,0,4)}disconnectedCallback(){this.stop(),this.resizeObserver?.disconnect(),this.io?.disconnect(),window.removeEventListener("pointermove",this.onPointer),document.removeEventListener("pointerleave",this.onLeave),this.gl&&(this.gl.deleteTexture(this.tex),this.gl.deleteBuffer(this.quad),this.gl.deleteProgram(this.prog),this.gl.getExtension("WEBGL_lose_context")?.loseContext()),this.gl=null,this.root=null}};customElements.get("mc-footer-water")||customElements.define("mc-footer-water",f);
