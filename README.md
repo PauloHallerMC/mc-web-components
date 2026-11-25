@@ -12,6 +12,7 @@ se publica aquí una versión nueva, con su etiqueta `vX.Y.Z`.
 | Archivo | Qué es |
 |---|---|
 | `rov-descent/mc-rov-descent.js` | Elemento personalizado `<mc-rov-descent>`: hero 3D con el descenso submarino |
+| `rov-descent/maullin.glb` | Modelo 3D del Maullín, optimizado para la web (cámara 4K y oclusión en los flotadores) |
 | `rov-descent/patagonia-mk2.glb` | Modelo 3D del Patagonia MK2, optimizado para la web |
 | `rov-descent/fondo-oceano.webp` | Fondo submarino de la hero |
 
@@ -24,6 +25,9 @@ https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.1/rov-descent/m
 https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.1/rov-descent/patagonia-mk2.glb
 https://cdn.jsdelivr.net/gh/PauloHallerMC/mc-web-components@v0.1.1/rov-descent/fondo-oceano.webp
 ```
+
+Las versiones de prueba para la versión Studio del sitio (staging) se publican sin etiqueta y se
+cargan con el commit en la dirección (`@<commit>` en vez de `@vX.Y.Z`).
 
 ## Derechos
 
